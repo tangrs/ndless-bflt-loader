@@ -60,11 +60,50 @@ Press Enter with no password entered.
 
 Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/var/cvs checkout -P elf2flt```
 
-Change into the elf2flt directory and run ```./configure --target=arm-none-eabi prefix=/usr/local --with-libbfd=/path/to/binutils/src/build/directory/libbfd.a --with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a --with-bfd-include-dir=/path/to/binutils/build/directory/bfd --with-binutils-include-dir=/path/to/binutils/src/include```
+Change into the elf2flt directory and run
+```./configure --target=arm-none-eabi \
+--prefix=/usr/local \
+--with-libbfd=/path/to/binutils/src/build/directory/libbfd.a \
+--with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a \
+--with-bfd-include-dir=/path/to/binutils/build/directory/bfd \
+--with-binutils-include-dir=/path/to/binutils/src/include```
 
 Replace ```/path/to/binutils/build/directory``` with the path to your build directory and ```/path/to/binutils/src``` with the original binutils source code directory. You may also want to change the prefix if you installed your toolchain elsewhere.
 
-Finally run ```make``` and ```sudo make install```. Now you can link into bFLT files.
+Finally run ```make``` and ```sudo make install```.
+
+Lastly, you need to modify Ndless's linker script (located in ```trunk/system/ldscript```) to place the ```.data``` section before the ```.bss``` section or else you're going to get linker errors.
+
+It should look something like this:
+
+```
+/* See http://sourceware.org/binutils/docs-2.20/ld/Scripts.html#Scripts */
+
+/* Avoid the useless default padding between sections */
+SECTIONS
+{
+	. = 0x0;
+	.text : { *(.text); }
+	.data : {
+		*(.data);
+		/* symbols used by asm statements in Ndless macros, optimized out by GCC, we want to emit only if used */
+		. = ALIGN(4);
+		PROVIDE(_syscallvar_savedlr = .);
+		. += 4;
+	}
+	.bss : {
+		/* symbol required by newlib */
+		__bss_start__ = .;
+		*(.bss);
+		__bss_end__ = .;
+	}
+}
+__got_size = SIZEOF(.got) / 4;
+__exidx_start = .;
+__exidx_end = .;
+```
+
+Now you can link into bFLT files.
 
 All you need to do now is add ```-Wl,-elf2flt``` to your LDFLAGS and change some file extensions and get rid of the final objcopy after linking.
 
