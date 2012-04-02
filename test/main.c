@@ -2,9 +2,6 @@
 #define global_var_string "Hello from global!"
 #define perform_cmp(var, expected) printf(#var " = %p, expected = %p  [%s]\n", (void*)(var), (void*)(expected), (var == expected ? "PASS" : ((fail = 1), "FAIL")))
 
-asm(".global _start \n"
-    "_start: b main \n");
-
 typedef void (foofunc)();
 void foo() { }
 
