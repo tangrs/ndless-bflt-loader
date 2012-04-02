@@ -57,8 +57,12 @@ static int copy_segments(FILE* fp, struct flat_hdr * header, void * mem, size_t 
     /* that means we can copy them all at once */
     fseek(fp, header->entry, SEEK_SET);
 
-    size_t size_to_copy = header->bss_end - header->entry;
-    if (size_to_copy > max_size) error_return("Segment buffer not large enough");
+    size_t size_required = header->bss_end - header->entry;
+    size_t size_to_copy = header->data_end - header->entry;
+    if (size_required > max_size) error_return("Segment buffer not large enough");
+
+    /* zero out memory for bss */
+    memset( (char*)mem + size_to_copy, 0, size_required - size_to_copy );
 
     if (fread(mem, 1, size_to_copy, fp) == size_to_copy) {
         return 0;
