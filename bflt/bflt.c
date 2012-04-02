@@ -86,9 +86,21 @@ static int process_relocs(FILE *fp, struct flat_hdr * header, void * base) {
     endian_fix32(offset_list, header->reloc_count);
 
     size_t i;
+    int id;
     for (i=0; i<header->reloc_count; i++) {
+        /* the library id is located in high byte of offset entry */
+        id = (offset_list[i] >> 24) & 0xff;
+        offset_list[i] &= 0x00ffffff;
+
         /* fix up offset */
-        *(uint32_t*)( (uint32_t)base + offset_list[i] ) += (uint32_t)base;
+        if (id == 0) {
+            /* id of 0 is always self referring */
+            *(uint32_t*)( (uint32_t)base + offset_list[i] ) += (uint32_t)base;
+        }else{
+            /* need to load shared library */
+            free(offset_list);
+            error_return("No support for bFLT shared libraries yet");
+        }
     }
 
     free(offset_list);
