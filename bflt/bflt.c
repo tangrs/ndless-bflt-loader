@@ -4,11 +4,24 @@
 
 #include <os.h>
 #include "flat.h"
+#include "bflt_config.h"
 #include "bflt.h"
 
 #define info(f, args...) printf("bFLT: "f"\n", ##args)
 #define error_return(x) return (printf("bFLT: "x"\n"), -1)
 #define error_goto_error(x) do { printf("bFLT: "x"\n"); goto error; } while(0)
+
+#ifdef SHARED_LIB_SUPPORT
+
+typedef struct {
+    void *base;
+    unsigned long build_date;
+} shared_lib_t;
+
+/* we exclude index 0 because that referres to the current executable - all indexes are one behind */
+static shared_lib_t lib_cache[sizeof(shared_lib_t) * (MAX_SHARED_LIB_ID-1)];
+
+#endif
 
 static inline void endian_fix32(uint32_t * tofix, size_t count) {
     /* bFLT is always big endian */
@@ -50,6 +63,59 @@ static int check_header(struct flat_hdr * header) {
 
     return 0;
 }
+#ifdef SHARED_LIB_SUPPORT
+static int load_shared_library(int id, void **base, unsigned long current_build_date) {
+    FILE* fp = NULL;
+    info("Trying to load library id %d", id);
+    if (id < 0 || id > 0xfe) error_goto_error("Attempted to load library with invalid ID");
+    if (id > MAX_SHARED_LIB_ID) error_goto_error("Library ID too high");
+
+    /* check if library is already loaded */
+    if (lib_cache[id-1].base != NULL) {
+        if (lib_cache[id-1].build_date > current_build_date) error_goto_error("Library build date is newer than current executable. Refusing to load.");
+
+        info("Returning cached library pointer");
+        *base = lib_cache[id-1].base;
+        return 0;
+    }
+
+
+    char filename[128];
+    sprintf(filename,"%s/lib%d.so.tns",LIB_SEARCH_DIR,id);
+    fp = fopen(filename, "rb");
+    if (!fp) {
+        info("Could not open %s",filename);
+        goto error;
+    }
+
+    /* get build date */
+    struct flat_hdr header;
+    if (read_header(fp,&header) != 0) error_goto_error("Could not read library header");
+    if (header.build_date > current_build_date) error_goto_error("Library build date is newer than current executable. Refusing to load.");
+
+    int (*entry_point)(int,char*[]);
+    size_t dummy;
+
+    /* load into memory - nts: potential circular dependancy problem */
+    if (bflt_fload(fp, base, &dummy, &entry_point) != 0) error_goto_error("Could not load library");
+
+    /* initialize the library */
+    if (entry_point(0,NULL) != 0) info("Warning: Library (ID:%d) init routine returned nonzero",id);
+
+    /* add to lib_cache */
+    lib_cache[id-1].base = *base;
+    lib_cache[id-1].build_date = header.build_date;
+
+    /* successfully loaded library */
+    fclose(fp);
+    return 0;
+    error:
+    *base = NULL;
+    if (fp) fclose(fp);
+    return -1;
+}
+#endif /* SHARED_LIB_SUPPORT */
+
 static int copy_segments(FILE* fp, struct flat_hdr * header, void * mem, size_t max_size) {
     /* each segment follows on one after the other */
     /* [   .text   ][   .data   ][   .bss   ]         */
@@ -71,19 +137,21 @@ static int copy_segments(FILE* fp, struct flat_hdr * header, void * mem, size_t 
     }
 }
 
-static inline void* calc_reloc(uint32_t offset, void *base) {
+static inline void* calc_reloc(uint32_t offset, struct flat_hdr * header, void *base) {
     /* the library id is located in high byte of offset entry */
     int id = (offset >> 24) & 0xff;
     offset &= 0x00ffffff;
 
     /* fix up offset */
-    if (id == 0) {
-        /* id of 0 is always self referring */
-        return (void*)((uint32_t)base + offset);
-    }else{
+    if (id != 0) {
         /* need to load shared library */
-        error_return("No support for bFLT shared libraries yet");
+#ifndef SHARED_LIB_SUPPORT
+        error_return("No support for bFLT shared libraries");
+#else
+        if (load_shared_library(id, &base, header->build_date) != 0) return (void*)-1;
+#endif
     }
+    return (void*)((uint32_t)base + offset);
 
 }
 
@@ -106,7 +174,7 @@ static int process_relocs(FILE *fp, struct flat_hdr * header, void * base) {
     for (i=0; i<header->reloc_count; i++) {
         uint32_t fixme = *(uint32_t*)((uint32_t)base + offset_list[i]);
 
-        void* relocd_addr = calc_reloc(fixme, base);
+        void* relocd_addr = calc_reloc(fixme, header, base);
         if (relocd_addr == (void*)-1) {
             free(offset_list);
             error_return("Unable to calculate relocation address");
@@ -121,7 +189,7 @@ static int process_got(struct flat_hdr * header, void * base) {
     uint32_t *got = (uint32_t*)((uint32_t)base + header->data_start - header->entry);
 
     for (; *got != 0xffffffff; got++) {
-        void* relocd_addr = calc_reloc(*got, base);
+        void* relocd_addr = calc_reloc(*got, header, base);
         if (relocd_addr == (void*)-1) {
             error_return("Unable to calculate got address");
         }
@@ -191,5 +259,22 @@ int bflt_fload(FILE* fp, void **mem_ptr, size_t *mem_size, int (**entry_address_
 
 void bflt_free(void* ptr) {
     info("Free'd bFLT executable");
+#ifdef SHARED_LIB_SUPPORT
+#ifndef CACHE_LIBS_AFTER_EXEC
+    bflt_free_cached();
+#endif
+#endif
     free(ptr);
 }
+void bflt_free_cached() {
+#ifdef SHARED_LIB_SUPPORT
+    info("Free'd bFLT cached libraries");
+    size_t i;
+    for (i=0; i<sizeof(shared_lib_t) * (MAX_SHARED_LIB_ID-1); i++) {
+        free(lib_cache[i].base);
+        lib_cache[i].base = NULL;
+        lib_cache[i].build_date = 0;
+    }
+#endif
+}
+

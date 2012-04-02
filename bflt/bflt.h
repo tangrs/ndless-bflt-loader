@@ -11,5 +11,6 @@
 int bflt_load(char* filename, void **mem_ptr, size_t* mem_size, int (**entry_address_ptr)(int,char*[]));
 int bflt_fload(FILE* fp, void **mem_ptr, size_t* mem_size, int (**entry_address_ptr)(int,char*[]));
 void bflt_free(void* ptr);
+void bflt_free_cached();
 
 #endif

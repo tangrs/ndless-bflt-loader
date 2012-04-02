@@ -5,12 +5,14 @@ Loads bFLT binaries into memory for Ndless.
 ## Status
 
 * Can run binaries
-
 * Basic unit tests pass
-
 * No support for gzipped data yet
-
 * GOT relocation untested (is there a good way to test??)
+* Shared library support is getting there (but still sketchy)
+
+TODO:
+
+* Work out how to create and use bFLT shared libraries reliably.
 
 ## API
 
@@ -34,7 +36,11 @@ Same as above except takes a file pointer as its argument. The file pointer is N
 
 ```void bflt_free(void* ptr);```
 
-Frees memory when finished. Give it the address stored in ```mem_ptr``` - NOT ```entry_point_ptr```.
+Frees memory when finished. Give it the address stored in ```mem_ptr``` - NOT the address in ```entry_point_ptr```.
+
+```void bflt_free_cached();```
+
+Free all cached libraries.
 
 ## Loading binaries
 
@@ -63,7 +69,7 @@ Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/v
 Change into the elf2flt directory and run
 
 ```
-./configure --target=arm-none-eabi
+./configure --target=arm-none-eabi \
 --prefix=/usr/local \
 --with-libbfd=/path/to/binutils/src/build/directory/libbfd.a \
 --with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a \
