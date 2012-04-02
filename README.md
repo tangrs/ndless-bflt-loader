@@ -61,12 +61,20 @@ Press Enter with no password entered.
 Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/var/cvs checkout -P elf2flt```
 
 Change into the elf2flt directory and run
-```./configure --target=arm-none-eabi \
+```
+
+./configure --target=arm-none-eabi \
+
 --prefix=/usr/local \
+
 --with-libbfd=/path/to/binutils/src/build/directory/libbfd.a \
+
 --with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a \
+
 --with-bfd-include-dir=/path/to/binutils/build/directory/bfd \
---with-binutils-include-dir=/path/to/binutils/src/include```
+
+--with-binutils-include-dir=/path/to/binutils/src/include
+```
 
 Replace ```/path/to/binutils/build/directory``` with the path to your build directory and ```/path/to/binutils/src``` with the original binutils source code directory. You may also want to change the prefix if you installed your toolchain elsewhere.
 
