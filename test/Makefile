@@ -9,13 +9,13 @@ vpath %.tns $(DISTDIR)
 all: $(EXE)
 
 %.o: %.c
-$(GCC) $(GCCFLAGS) -c $<
+	$(GCC) $(GCCFLAGS) -c $<
 %.o: %.S
-$(GCC) $(GCCFLAGS) -c $<
+	$(GCC) $(GCCFLAGS) -c $<
 
 $(EXE): $(OBJS)
-$(LD) $^ -o $@ $(LDFLAGS)
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 clean:
-rm -f *.o *.gdb a.out
-rm -f $(EXE)
+	rm -f *.o *.gdb a.out
+	rm -f $(EXE)
