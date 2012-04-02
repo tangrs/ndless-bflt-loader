@@ -61,8 +61,8 @@ Press Enter with no password entered.
 Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/var/cvs checkout -P elf2flt```
 
 Change into the elf2flt directory and run
-```
 
+```
 ./configure --target=arm-none-eabi \
 
 --prefix=/usr/local \
