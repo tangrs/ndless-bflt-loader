@@ -1,10 +1,9 @@
 GCC = nspire-gcc
 LD = nspire-ld
 GCCFLAGS = -elf2flt -Os -nostdlib -Wall -W -marm -mcpu=arm926ej-s
-LDFLAGS = -Wl,-elf2flt -nostdlib
-EXE = test.tns
+LDFLAGS = -T "ldscript" -Wl,-elf2flt -nostdlib
+EXE = test.bflt.tns
 OBJS = $(patsubst %.c,%.o,$(wildcard *.c))
-DISTDIR = .
 vpath %.tns $(DISTDIR)
 
 all: $(EXE)
@@ -13,8 +12,8 @@ all: $(EXE)
 	$(GCC) $(GCCFLAGS) -c $<
 
 $(EXE): $(OBJS)
-	$(LD) $^ -o $(@:.tns=.bflt.tns) $(LDFLAGS)
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm -f *.o *.elf
-	rm -f $(DISTDIR)/$(EXE)
+	rm -f *.o *.gdb a.out
+	rm -f $(EXE)
