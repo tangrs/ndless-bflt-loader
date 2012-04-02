@@ -12,6 +12,8 @@ Loads bFLT binaries into memory for Ndless.
 
 * GOT relocation untested (is there a good way to test??)
 
+* Has an SDK!
+
 ## API
 
 There's only three functions being exposed:
@@ -63,7 +65,7 @@ Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/v
 Change into the elf2flt directory and run
 
 ```
-./configure --target=arm-none-eabi
+./configure --target=arm-none-eabi \
 --prefix=/usr/local \
 --with-libbfd=/path/to/binutils/src/build/directory/libbfd.a \
 --with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a \
@@ -73,64 +75,36 @@ Change into the elf2flt directory and run
 
 Replace ```/path/to/binutils/build/directory``` with the path to your build directory and ```/path/to/binutils/src``` with the original binutils source code directory. You may also want to change the prefix if you installed your toolchain elsewhere.
 
-Finally run ```make``` and ```sudo make install```.
+Run ```make``` and ```sudo make install``` and you'll have a working elf2flt toolset.
 
-Lastly, you need to modify Ndless's linker script (located in ```trunk/system/ldscript```) to place the ```.data``` section before the ```.bss``` section or else you're going to get linker errors.
+Finally you need to change into the ```tools``` directory and run ```make```. This will build the nessecary startup files.
 
-It should look something like this:
+To output bFLT executables for your projects, you simply need to change your ```GCC``` and ```LD``` to ```nspire-bflt-gcc``` and ```nspire-bflt-ld``` respectively. You also need to remove the call to ```objcopy```.
 
-```
-/* See http://sourceware.org/binutils/docs-2.20/ld/Scripts.html#Scripts */
-
-/* Avoid the useless default padding between sections */
-SECTIONS
-{
-	. = 0x0;
-	.text : { *(.text); }
-	.data : {
-		*(.data);
-		/* symbols used by asm statements in Ndless macros, optimized out by GCC, we want to emit only if used */
-		. = ALIGN(4);
-		PROVIDE(_syscallvar_savedlr = .);
-		. += 4;
-	}
-	.bss : {
-		/* symbol required by newlib */
-		__bss_start__ = .;
-		*(.bss);
-		__bss_end__ = .;
-	}
-}
-__got_size = SIZEOF(.got) / 4;
-__exidx_start = .;
-__exidx_end = .;
-```
-
-Now you can link into bFLT files.
-
-All you need to do now is add ```-Wl,-elf2flt``` to your LDFLAGS and change some file extensions and get rid of the final objcopy after linking.
+The output from ```nspire-bflt-ld``` will be the executable itself.
 
 Here's a sample Makefile
 
 ```
-GCC = nspire-gcc
-LD = nspire-ld
-GCCFLAGS = -elf2flt -Os -nostdlib -Wall -W -marm -mcpu=arm926ej-s
-LDFLAGS = -Wl,-elf2flt -nostdlib
-EXE = test.tns
+GCC = nspire-bflt-gcc
+LD = nspire-bflt-ld
+GCCFLAGS = -Wall -W
+LDFLAGS =
+EXE = test.bflt.tns
 OBJS = $(patsubst %.c,%.o,$(wildcard *.c))
-DISTDIR = .
 vpath %.tns $(DISTDIR)
 
 all: $(EXE)
 
 %.o: %.c
 	$(GCC) $(GCCFLAGS) -c $<
+%.o: %.S
+	$(GCC) $(GCCFLAGS) -c $<
 
 $(EXE): $(OBJS)
-	$(LD) $^ -o $(@:.tns=.bflt.tns) $(LDFLAGS)
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm -f *.o *.elf
-	rm -f $(DISTDIR)/$(EXE)
+	rm -f *.o *.gdb a.out
+	rm -f $(EXE)
 ```
