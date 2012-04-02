@@ -63,16 +63,11 @@ Then checkout the source code ```cvs -z3 -d:pserver:anonymous@cvs.uclinux.org:/v
 Change into the elf2flt directory and run
 
 ```
-./configure --target=arm-none-eabi \
-
+./configure --target=arm-none-eabi
 --prefix=/usr/local \
-
 --with-libbfd=/path/to/binutils/src/build/directory/libbfd.a \
-
 --with-libiberty=/path/to/binutils/build/directory/libiberty/libiberty.a \
-
 --with-bfd-include-dir=/path/to/binutils/build/directory/bfd \
-
 --with-binutils-include-dir=/path/to/binutils/src/include
 ```
 
