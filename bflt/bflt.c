@@ -70,6 +70,23 @@ static int copy_segments(FILE* fp, struct flat_hdr * header, void * mem, size_t 
         error_return("Could not read all segments");
     }
 }
+
+static inline void* calc_reloc(uint32_t offset, void *base) {
+    /* the library id is located in high byte of offset entry */
+    int id = (offset >> 24) & 0xff;
+    offset &= 0x00ffffff;
+
+    /* fix up offset */
+    if (id == 0) {
+        /* id of 0 is always self referring */
+        return (void*)((uint32_t)base + offset);
+    }else{
+        /* need to load shared library */
+        error_return("No support for bFLT shared libraries yet");
+    }
+
+}
+
 static int process_relocs(FILE *fp, struct flat_hdr * header, void * base) {
     if (!header->reloc_count) { info("No relocation needed"); return 0; }
     fseek(fp, header->reloc_start, SEEK_SET);
@@ -86,31 +103,29 @@ static int process_relocs(FILE *fp, struct flat_hdr * header, void * base) {
     endian_fix32(offset_list, header->reloc_count);
 
     size_t i;
-    int id;
     for (i=0; i<header->reloc_count; i++) {
-        /* the library id is located in high byte of offset entry */
-        id = (offset_list[i] >> 24) & 0xff;
-        offset_list[i] &= 0x00ffffff;
+        uint32_t fixme = *(uint32_t*)((uint32_t)base + offset_list[i]);
 
-        /* fix up offset */
-        if (id == 0) {
-            /* id of 0 is always self referring */
-            *(uint32_t*)( (uint32_t)base + offset_list[i] ) += (uint32_t)base;
-        }else{
-            /* need to load shared library */
+        void* relocd_addr = calc_reloc(fixme, base);
+        if (relocd_addr == (void*)-1) {
             free(offset_list);
-            error_return("No support for bFLT shared libraries yet");
+            error_return("Unable to calculate relocation address");
         }
-    }
 
+        *(uint32_t*)((uint32_t)base + offset_list[i]) = (uint32_t)relocd_addr;
+    }
     free(offset_list);
     return 0;
 }
 static int process_got(struct flat_hdr * header, void * base) {
     uint32_t *got = (uint32_t*)((uint32_t)base + header->data_start - header->entry);
-
+    bkpt();
     for (; *got != 0xffffffff; got++) {
-        *got += (uint32_t)base;
+        void* relocd_addr = calc_reloc(*got, base);
+        if (relocd_addr == (void*)-1) {
+            error_return("Unable to calculate got address");
+        }
+        *got = (uint32_t)relocd_addr;
     }
 
     return 0;
