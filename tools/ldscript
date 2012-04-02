@@ -1,0 +1,24 @@
+SECTIONS {
+	.text 0x0 : {
+		. = ALIGN(0x4) ;
+		*(.text)
+		*(.text.*)
+	}
+
+	.data : {
+		. = ALIGN(0x4) ;
+		*(.got.plt)
+		*(.got)
+		LONG(-1)
+        *(.rodata*)
+		*(.data*)
+		PROVIDE(_syscallvar_savedlr = .);
+		. += 4;
+	}
+	.bss : {
+		. = ALIGN(0x4) ;
+		*(.bss*)
+	}
+}
+__exidx_start = .;
+__exidx_end = .;
