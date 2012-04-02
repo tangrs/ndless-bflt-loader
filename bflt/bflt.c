@@ -119,7 +119,7 @@ static int process_relocs(FILE *fp, struct flat_hdr * header, void * base) {
 }
 static int process_got(struct flat_hdr * header, void * base) {
     uint32_t *got = (uint32_t*)((uint32_t)base + header->data_start - header->entry);
-    bkpt();
+
     for (; *got != 0xffffffff; got++) {
         void* relocd_addr = calc_reloc(*got, base);
         if (relocd_addr == (void*)-1) {
