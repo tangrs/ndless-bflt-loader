@@ -4,5 +4,6 @@
 *.tns
 *.o
 *.a
+_lib*_wraps.S
 a.out
 

@@ -7,9 +7,27 @@ SECTIONS {
 
 	.data : {
 		. = ALIGN(0x4) ;
-		*(.got.plt)
+		*(.got.plt*)
 		*(.got)
 		LONG(-1)
+
+		/* The .shlb section is a workaround for calling across
+		   shared libraries. The automatically generated code veneers
+		   don't seem to have their addresses relocated properly.
+
+		   The workaround involves using the --wrap option in ld
+		   to wrap library calls into our own code veneers which are
+		   located in the data section and get relocated properly.
+
+		   I've tested putting this section in the .text section
+		   (argubly where it should belong) but it seems it doesn't get
+		   relocated correctly if I place it in that section either.
+
+		   See the README in shared_library_test for more info
+		*/
+		*(.shlb)
+
+
         *(.rodata*)
 		*(.data*)
 		PROVIDE(_syscallvar_savedlr = .);
