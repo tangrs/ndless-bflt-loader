@@ -7,8 +7,8 @@ Loads bFLT binaries into memory for Ndless.
 * Can run binaries
 * Basic unit tests pass
 * No support for gzipped data yet
-* GOT relocation untested (is there a good way to test??)
-* Shared library support is getting there (but still sketchy)
+* Relocations all tested and working correctly
+* Shared library support is basically stable (albeit with nasty workarounds)
 * Has an SDK!
 
 ## API
