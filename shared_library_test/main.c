@@ -53,7 +53,10 @@ int main(int argc, char *argv[]) {
     if (bss_fail) printf("[FAIL]\n"); else printf("[PASS]\n");
 
     int library_call();
-    printf("Calling library function [%s]\n", library_call() ? "FAIL" : "PASS");
+    printf("Address of library_call = %p [%s]\n", (void*)library_call, (uint32_t)library_call < 0x10000000 ? "FAIL" : "PASS?");
+    bkpt();
+    //if ((uint32_t)library_call > 0x10000000) printf("Calling library function [%s]\n", library_call() ? "FAIL" : "PASS");
+    library_call();
 
     if (!fail) {
         printf("Unit test successful\n");

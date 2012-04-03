@@ -1,41 +1,39 @@
-GCC = arm-none-eabi-gcc
-LD = arm-none-eabi-gcc
+GCC = nspire-bflt-gcc
+LD = nspire-bflt-ld
 AR = arm-none-eabi-ar
+NM = arm-none-eabi-nm
 OBJCOPY = arm-none-eabi-objcopy
-GCCFLAGS = -elf2flt -Os -nostdlib -Wall -W -marm -mcpu=arm926ej-s -I/Users/danieltang/ndless/trunk3.0/include
-LDFLAGS = -T "ldscript" -Wl,-elf2flt -nostdlib
+GCCFLAGS = -Wall -W
+LDFLAGS =
 EXE = test.bflt.tns
 LIBID = 3
 LIB = lib$(LIBID).so.tns
+LIBOBJS = lib.o
 EXEOBJS = main.o
+EXPORTLIST = exports.sym
+EXPORTSYMBOLS = `awk '{printf "-G %s ", $$0}' "$(EXPORTLIST)"`
 
 vpath %.tns $(DISTDIR)
 
 all: $(LIB) $(EXE)
 
 %.o: %.c
-	$(GCC) -shared $(GCCFLAGS) -c $<
+	$(GCC) $(GCCFLAGS) -DLIB_ID=$(LIBID) -c $<
 
 $(EXE): $(EXEOBJS)
-	$(LD) -mshared-library-id=0 -Wl,-R,$(LIB).gdb $^ -o $@ $(LDFLAGS)
+	$(LD) -static -Wl,-R,$(LIB).gdb $^ -o $@ $(LDFLAGS)
 
-$(LIB):
-	$(GCC) $(GCCFLAGS) -DLIB_ID=$(LIBID) -c lib.c
-	$(GCC) $(GCCFLAGS) -DLIB_ID=$(LIBID) -c dummy.S
-
-	$(AR) -r $(LIB:.lib.bflt.tns=.a) lib.o dummy.o
-	$(LD) $(LDFLAGS) -Wl,-shared-lib-id,$(LIBID) dummy.o lib.o -Wl,$(LIB:.lib.bflt.tns=.a) -o $@
-	$(OBJCOPY) \
-      -L _GLOBAL_OFFSET_TABLE_ \
-      -L main \
-      -L __main \
-      -L __base \
-      -L __got_size \
-      -L relocate_loop    \
-      -L nspire_start \
-      -L __saved_syscall_lr        \
-      -L _current_shared_library_a5_offset_ \
-      $(LIB).gdb
+$(LIB): $(LIBOBJS) $(EXPORTLIST)
+	$(AR) -r $(LIB:.so.tns=.a) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -mid-shared-library -Wl,-shared-lib-id,$(LIBID) -Wl,--whole-archive,$(LIB:.so.tns=.a),--no-whole-archive -o $@
+	$(LD) $(LDFLAGS) -mid-shared-library -Wl,-shared-lib-id,0 -Wl,--whole-archive,$(LIB:.so.tns=.a),--no-whole-archive -o lib.so.tns
+	mv lib.so.tns $(LIB)
+	$(OBJCOPY) $(EXPORTSYMBOLS) $(LIB).gdb
+	@echo =======
+	@echo The following symbols will be exported
+	@echo
+	@$(NM) lib3.so.tns.gdb -g | sort
+	@echo =======
 
 clean:
 	rm -f *.o *.gdb a.out *.tns *.a
