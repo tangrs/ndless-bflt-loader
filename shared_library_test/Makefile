@@ -21,7 +21,7 @@ all: $(LIB) $(EXE)
 	$(GCC) $(GCCFLAGS) -DLIB_ID=$(LIBID) -c $<
 
 $(EXE): $(EXEOBJS)
-	$(LD) -static -Wl,-R,$(LIB).gdb $^ -o $@ $(LDFLAGS)
+	$(LD) -Wl,-dy -Wl,-R,$(LIB).gdb $^ -o $@ $(LDFLAGS)
 
 $(LIB): $(LIBOBJS) $(EXPORTLIST)
 	$(AR) -r $(LIB:.so.tns=.a) $(LIBOBJS)

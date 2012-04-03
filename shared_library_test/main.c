@@ -2,6 +2,16 @@
 #define global_var_string "Hello from global!"
 #define perform_cmp(var, expected) printf(#var " = %p, expected = %p  [%s]\n", (void*)(var), (void*)(expected), (var == expected ? "PASS" : ((fail = 1), "FAIL")))
 
+#define DIRECT_LIB_CALL_RET(ret, x, args...) do { \
+        typeof(x) * volatile tmp = x; \
+        ret = tmp(#args); \
+    } while (0)
+
+#define DIRECT_LIB_CALL(x, args...) do { \
+        typeof(x) * volatile tmp = x; \
+        tmp(#args); \
+    } while (0)
+
 typedef void (foofunc)();
 void foo() { }
 
@@ -52,11 +62,12 @@ int main(int argc, char *argv[]) {
     }
     if (bss_fail) printf("[FAIL]\n"); else printf("[PASS]\n");
 
-    int library_call();
-    printf("Address of library_call = %p [%s]\n", (void*)library_call, (uint32_t)library_call < 0x10000000 ? "FAIL" : "PASS?");
-    bkpt();
+    extern int library_call();
+    typeof(library_call) *func = ((typeof(library_call)*)((void*)&library_call));
+    printf("Address of library_call = %p [%s]\n", (void*)func, (uint32_t)library_call < 0x10000000 ? "FAIL" : "PASS?");
     //if ((uint32_t)library_call > 0x10000000) printf("Calling library function [%s]\n", library_call() ? "FAIL" : "PASS");
-    library_call();
+
+    DIRECT_LIB_CALL(library_call);
 
     if (!fail) {
         printf("Unit test successful\n");
