@@ -5,13 +5,10 @@ Loads bFLT binaries into memory for Ndless.
 ## Status
 
 * Can run binaries
-
 * Basic unit tests pass
-
 * No support for gzipped data yet
-
 * GOT relocation untested (is there a good way to test??)
-
+* Shared library support is getting there (but still sketchy)
 * Has an SDK!
 
 ## API
@@ -36,7 +33,11 @@ Same as above except takes a file pointer as its argument. The file pointer is N
 
 ```void bflt_free(void* ptr);```
 
-Frees memory when finished. Give it the address stored in ```mem_ptr``` - NOT ```entry_point_ptr```.
+Frees memory when finished. Give it the address stored in ```mem_ptr``` - NOT the address in ```entry_point_ptr```.
+
+```void bflt_free_cached();```
+
+Free all cached libraries.
 
 ## Loading binaries
 

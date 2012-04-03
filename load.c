@@ -24,5 +24,6 @@ int main(int argc, char* argv[]) {
         printf("bflt load did not return 0\n");
     }
     bflt_free(bin_mem);
+    bflt_free_cached();
     return 0;
 }

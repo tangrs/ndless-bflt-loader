@@ -1,5 +1,5 @@
 _start: .global _start
-
+lib_main: .global lib_main
     stmfd sp!, {r4-r11,lr}
 	str  sp, __crt0_savedsp
 	bl   main

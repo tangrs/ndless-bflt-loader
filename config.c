@@ -9,12 +9,13 @@
 
 int config_file_already_written() {
     FILE *fp = fopen(NDLESS_CONFIG_FILE,"rb");
+    void *mem = NULL;
     int ret;
     if (!fp) { return 0; }
     struct stat filestat;
     if (stat(NDLESS_CONFIG_FILE,&filestat) == -1) { ret = 0; goto cleanup; }
 
-    void* mem = malloc(filestat.st_size+1);
+    mem = malloc(filestat.st_size+1);
     if (!mem) { ret = 0; goto cleanup; }
 
     fread(mem, 1, filestat.st_size, fp);
