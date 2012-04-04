@@ -24,12 +24,12 @@
 /* Where libraries are searched for */
 #define LIB_SEARCH_DIR "/documents/lib"
 
+#endif
+
 /* Verbose level
      2 = Debugging - Prints infomation and errors
      1 = Prints errors only
      0 = Print nothing and fail silently */
 #define VERBOSE_LEVEL 2
-
-#endif
 
 #endif
