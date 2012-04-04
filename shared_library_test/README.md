@@ -59,3 +59,5 @@ Of course, calling that function will result in a crash as it tries to branch to
 The workaround for this was to skip the veneer altogether and basically write our own. This is done by taking advantage of the linker's --wrap parameter which redirects symbols. The Makefile simply generates a wrapper assembly file containing symbols from the library that loads addresses that ARE relocated correctly at run time.
 
 This section is kept in the .data section of the file since it doesn't relocate correctly if I place it in the .text section. The Nspire doesn't differentiate between code and data so this works like a charm.
+
+Also, because the veneer address is never referenced, it gets optimized away.
