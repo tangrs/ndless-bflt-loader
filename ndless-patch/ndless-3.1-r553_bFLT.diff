@@ -1,0 +1,198 @@
+Index: arm/Makefile
+===================================================================
+--- arm/Makefile	(revision 573)
++++ arm/Makefile	(working copy)
+@@ -44,7 +44,7 @@
+ # utils.c contains C-preprocessor logic based on OS_VERSION. Build an .o for each version.
+ utils_light_thumb_%.o: utils.c
+ 	$(GCC) $(GCCFLAGS) -c $< -o $@
+-# Prevent automatic deletion of these files considered as intermediate because not explicitely named as a target 
++# Prevent automatic deletion of these files considered as intermediate because not explicitely named as a target
+ .PRECIOUS: utils_light_thumb_%.o
+ 
+ # Explicit dependencies strangely required for the target to avoid being rebuilt when not really needed
+@@ -88,7 +88,7 @@
+ 	mkdir -p $(DISTDIR)
+ 	MakeTNO $< $(DISTDIR)/$@ $(OS_NAME) tno_template.bin  86
+ 
+-ndless_installer-bin-%.o: ndless_installer-%.bin tno_template_installed.bin 
++ndless_installer-bin-%.o: ndless_installer-%.bin tno_template_installed.bin
+ 	MakeTNO $< $(@:.o=.tmp.o) $* tno_template_installed.bin  0
+ 	$(OBJCOPY) -I binary -O elf32-littlearm -B arm $(@:.o=.tmp.o) $@
+ #	@rm $(@:.o=.tmp.o)
+@@ -96,11 +96,11 @@
+ .PRECIOUS: ndless_installer-%.bin
+ 
+ SYSCALLS_LIGHT_OBJS :=  $(foreach os_version, $(OS_VERSIONS), $(foreach model, $(MODELS), syscalls-light_$(model)-$(os_version).o))
+-# Prevent automatic deletion of these files considered as intermediate because not explicitely named as a target 
++# Prevent automatic deletion of these files considered as intermediate because not explicitely named as a target
+ .PRECIOUS: $(SYSCALLS_LIGHT_OBJS)
+ SYSCALLS_OBJS :=  $(foreach os_version, $(OS_VERSIONS), $(foreach model, $(MODELS), syscalls_$(model)-$(os_version).o))
+ INSTALLER_BIN_OBJS := $(foreach os_version, $(OS_VERSIONS), $(foreach model, $(MODELS), ndless_installer-bin-$(os_version)-$(model).o))
+-CORE_OBJS := install.o ploaderhook.o ints.o syscalls.o utils.o emu.o config.o luaext.o $(SYSCALLS_OBJS) $(INSTALLER_BIN_OBJS)
++CORE_OBJS := install.o ploaderhook.o bflt.o ints.o syscalls.o utils.o emu.o config.o luaext.o $(SYSCALLS_OBJS) $(INSTALLER_BIN_OBJS)
+ RES_OBJS := $(CORE_OBJS)
+ 
+ # Build with the light switch (temporarily added to $GCCFLAGS)
+@@ -133,7 +133,7 @@
+ 
+ cleanbin:
+ 	rm -rf *.o *.elf *.tno *.tnc ndless_installer-*.bin
+-	
++
+ cleansubdirs:
+ 	@for i in $(SUBDIRS); do \
+ 	echo "make all in $$i..."; \
+Index: arm/ploaderhook.c
+===================================================================
+--- arm/ploaderhook.c	(revision 573)
++++ arm/ploaderhook.c	(working copy)
+@@ -18,12 +18,13 @@
+  * Portions created by the Initial Developer are Copyright (C) 2010-2012
+  * the Initial Developer. All Rights Reserved.
+  *
+- * Contributor(s): 
++ * Contributor(s):
+  *                 Geoffrey ANNEHEIM <geoffrey.anneheim@gmail.com>
+  ****************************************************************************/
+ 
+ #include <os.h>
+ #include "ndless.h"
++#include "bflt.h"
+ 
+ 
+ struct assoc_file_recur_cb_ctx {
+@@ -51,15 +52,46 @@
+ 	is_current_prgm_resident = TRUE;
+ }
+ 
++static int ndless_load(char *docpath, void **base, size_t *size, int (**entry_address_ptr)(int,char*[])) {
++	int ret;
++    FILE* docfile = fopen(docpath, "rb");
++	struct stat docstat;
++	if (!docfile || (ret = stat(docpath, &docstat))) {
++		puts("ld_exec: can't open doc");
++		return 1;
++	}
++
++	void *docptr = emu_debug_alloc_ptr ? emu_debug_alloc_ptr : malloc(docstat.st_size);
++	if (!docptr) {
++		puts("ld_exec: can't malloc");
++		return 1;
++	}
++	if (!fread(docptr, docstat.st_size, 1, docfile)) {
++		puts("ld_exec: can't read doc");
++		if (!emu_debug_alloc_ptr)
++			free(docptr);
++		return 1;
++	}
++	fclose(docfile);
++	if (strcmp(PRGMSIG, docptr)) { /* not a program */
++		if (!emu_debug_alloc_ptr)
++			free(docptr);
++		return 1;
++	}
++
++	*base = docptr;
++	*size = docstat.st_size;
++	*entry_address_ptr = (int (*)(int argc, char *argv[]))(docptr + sizeof(PRGMSIG));
++    return 0;
++}
++
+ // Try to run a document. Returns non zero if can't run it.
+ // If resident_ptr isn't NULL, the program's memory block isn't freed and is stored in resident_ptr. It may be freed later with ld_free().
+ int ld_exec(const char *path, void **resident_ptr) {
+ 	char docpath[FILENAME_MAX];
+-	int ret;
+ 	unsigned i;
+ 	char arg1[FILENAME_MAX];
+ 	int argc = 1;
+-	FILE *docfile = NULL;
+ 	strcpy(docpath, path);
+ 
+ 	// File association
+@@ -88,31 +120,29 @@
+ 		cfg_close();
+ 	}
+ 
+-	docfile = fopen(docpath, "rb");
+-	struct stat docstat;
+-	if (!docfile || (ret = stat(docpath, &docstat))) {
+-cantopen:
+-		puts("ld_exec: can't open doc");
+-		return 1;
+-	}
++    enum {
++        ERROR_BIN,
++        NDLESS_BIN,
++        BFLT_BIN
++    };
++    int loaded = ERROR_BIN;
++    void *base;
++    size_t size;
++    int (*entry)(int argc, char *argv[]);
+ 
+-	void *docptr = emu_debug_alloc_ptr ? emu_debug_alloc_ptr : malloc(docstat.st_size);
+-	if (!docptr) {
+-		puts("ld_exec: can't malloc");
+-		return 1;
+-	}
+-	if (!fread(docptr, docstat.st_size, 1, docfile)) {
+-		puts("ld_exec: can't read doc");
+-		if (!emu_debug_alloc_ptr)
+-			free(docptr);
+-		return 1;
+-	}
+-	fclose(docfile);
+-	if (strcmp(PRGMSIG, docptr)) { /* not a program */
+-		if (!emu_debug_alloc_ptr)
+-			free(docptr);
+-		return 1;
+-	}
++    // try load as ndless binary first
++    if (ndless_load(docpath, &base, &size, &entry) != 0) {
++        // if failed, try loading as bflt binary
++        if (bflt_load(docpath, &base, &size, &entry) != 0) {
++            //error loading binary
++            return 1;
++        }else{
++            loaded = BFLT_BIN;
++        }
++    }else{
++        loaded = NDLESS_BIN;
++    }
++
+ 	int intmask = TCT_Local_Control_Interrupts(-1); /* TODO workaround: disable the interrupts to avoid the clock on the screen */
+ 	wait_no_key_pressed(); // let the user release the Enter key, to avoid being read by the program
+ 	void *savedscr = malloc(SCREEN_BYTES_SIZE);
+@@ -125,7 +155,7 @@
+ 	}
+ 	is_current_prgm_resident = FALSE;
+ 	clear_cache();
+-	((void (*)(int argc, char *argv[]))(docptr + sizeof(PRGMSIG)))(argc, argc == 1 ? ((char*[]){docpath, NULL}) : ((char*[]){docpath, arg1, NULL})); /* run the program */
++	entry(argc, argc == 1 ? ((char*[]){docpath, NULL}) : ((char*[]){docpath, arg1, NULL})); /* run the program */
+ 	if (has_colors) {
+ 		lcd_incolor(); // in case not restored by the program
+ 	}
+@@ -134,14 +164,18 @@
+ 	wait_no_key_pressed(); // let the user release the key used to exit the program, to avoid being read by the OS
+ 	TCT_Local_Control_Interrupts(intmask);
+ 	if (resident_ptr) {
+-		*resident_ptr = docptr;
++		*resident_ptr = base;
+ 		return 0;
+ 	}
+ 	if (is_current_prgm_resident) // required by the program itself
+ 		return 0;
+-	if (!emu_debug_alloc_ptr)
+-		free(docptr);
++	if (!emu_debug_alloc_ptr) {
++	    if (loaded == NDLESS_BIN) free(base);
++	    if (loaded == BFLT_BIN) bflt_free(base);
++	}
+ 	return 0;
++cantopen:
++    return 1;
+ }
+ 
+ // To free the program's memory block when run with ld_exec(non null resident_ptr)
