@@ -18,7 +18,7 @@ There's a few steps to creating shared libraries. We basically need to produce 3
 
 ```lib$(LIBID).so.tns.gdb```: This contains all the information needed to link binaries with.
 
-```_lib$(LIBID)_wraps.o```: The wrappers for that library. This is to implement a workaround for shared library support (see below).
+```lib$(LIBID)_wraps.o```: The wrappers for that library. This is to implement a workaround for shared library support (see below).
 
 ```lib$(LIBID).so.tns```: The actual shared library. This is the only file that needs to be distributed if people want to use it. The others are all for compile time linking.
 
@@ -34,9 +34,9 @@ More specific details can be found in the comments of the Makefile.
 
 ## How to use shared libraries
 
-You will need two files: ```lib$(LIBID).so.tns.gdb``` and ```_lib$(LIBID)_wraps.o```.
+You will need two files: ```lib$(LIBID).so.tns.gdb``` and ```lib$(LIBID)_wraps.o```.
 
-The process is very simple. Link you binary as you would for normal bFLT binaries while adding a ```-Wl,-R,lib$(LIBID).so.tns.gdb _lib$(LIBID)_wraps.o``` to your ```LDFLAGS``` for every shared library you link to (replacing $(LIBID) with the ID of the library).
+The process is very simple. Link you binary as you would for normal bFLT binaries while adding a ```-Wl,-R,lib$(LIBID).so.tns.gdb lib$(LIBID)_wraps.o``` to your ```LDFLAGS``` for every shared library you link to (replacing $(LIBID) with the ID of the library).
 
 Expecting more? Sorry to disappoint.
 
