@@ -27,6 +27,7 @@ Of course, we also need some input files. You need:
 
 * Your C files (duh)
 * A ```exports.sym``` file containing a newline-separated list of symbols you want to export. All other symbols will be made local and not available to link with executables
+* To somehow pick a unique library ID
 
 Once you have these files, you can add them to the sample Makefile included in this directory.
 
@@ -36,7 +37,9 @@ More specific details can be found in the comments of the Makefile.
 
 You will need two files: ```lib$(LIBID).so.tns.gdb``` and ```lib$(LIBID)_wraps.o```.
 
-The process is very simple. Link you binary as you would for normal bFLT binaries while adding a ```-Wl,-R,lib$(LIBID).so.tns.gdb lib$(LIBID)_wraps.o``` to your ```LDFLAGS``` for every shared library you link to (replacing $(LIBID) with the ID of the library).
+The process is very simple. Link you binary as you would for normal bFLT binaries while adding a ```-Wl,-R,lib$(LIBID).so.tns.gdb lib$(LIBID)_wraps.o``` to your ```LDFLAGS``` for every shared library you link to (replacing $(LIBID) with the ID of the library). At the end, you also need to add ```-Wl,--wrap,syms``` so the wrap is actually performed.
+
+For more information, refer to the example Makefiles. They should be directly usable - you just need to change a few parameters.
 
 Expecting more? Sorry to disappoint.
 
