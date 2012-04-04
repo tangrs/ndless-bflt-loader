@@ -11,7 +11,7 @@
 /* This value - 1 is also the maximum number of loadable libraries at once */
 /* Libraries will be loaded into a cache. The table needed to keep track of
    all the libraries will be (sizeof(shared_lib_t) * (MAX_SHARED_LIB_ID-1)) bytes. */
-#define MAX_SHARED_LIB_ID 10
+#define MAX_SHARED_LIB_ID 0xfe
 
 /* Cache shared libraries in memory even after the original executable has been
    freed. This can save subsequent loading times but obviously uses more memory.

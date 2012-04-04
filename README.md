@@ -109,3 +109,9 @@ clean:
 	rm -f *.o *.gdb a.out
 	rm -f $(EXE)
 ```
+
+## License
+
+See the LICENSE file in each folder to see what the files in that folder are licensed under. The file header also indicates the license used for that particular file.
+
+Any unmarked file is licensed under the Mozilla Public License.

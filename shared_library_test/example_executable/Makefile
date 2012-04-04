@@ -1,3 +1,6 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
 GCC = nspire-bflt-gcc
 LD = nspire-bflt-ld
 AR = arm-none-eabi-ar

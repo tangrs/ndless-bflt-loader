@@ -1,3 +1,6 @@
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/ */
+
 #include <os.h>
 #define global_var_string "Hello from global!"
 #define perform_cmp(var, expected) printf(#var " = %p, expected = %p  [%s]\n", (void*)(var), (void*)(expected), (var == expected ? "PASS" : ((fail = 1), "FAIL")))
