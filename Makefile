@@ -13,6 +13,9 @@ vpath %.tns $(DISTDIR)
 
 all: $(EXE)
 
+bflt/bflt.o: bflt/bflt.c bflt/bflt_config.h
+	$(GCC) $(GCCFLAGS) -c $< -o $@
+
 %.o: %.c
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 

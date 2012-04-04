@@ -7,9 +7,20 @@
 #include "bflt_config.h"
 #include "bflt.h"
 
+#if VERBOSE_LEVEL > 1
 #define info(f, args...) printf("bFLT: "f"\n", ##args)
+#else
+#define info(f, args...) (void)0
+#endif
+
+
+#if VERBOSE_LEVEL > 0
 #define error_return(x) return (printf("bFLT: "x"\n"), -1)
 #define error_goto_error(x) do { printf("bFLT: "x"\n"); goto error; } while(0)
+#else
+#define error_return(x) return -1
+#define error_goto_error(x) goto error
+#endif
 
 #ifdef SHARED_LIB_SUPPORT
 
