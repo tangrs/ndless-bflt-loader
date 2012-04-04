@@ -7,19 +7,37 @@
 #include "bflt_config.h"
 #include "bflt.h"
 
-#if VERBOSE_LEVEL > 1
+#if VERBOSE_LEVEL > 2
 #define info(f, args...) printf("bFLT: "f"\n", ##args)
 #else
 #define info(f, args...) (void)0
 #endif
 
 
-#if VERBOSE_LEVEL > 0
-#define error_return(x) return (printf("bFLT: "x"\n"), -1)
-#define error_goto_error(x) do { printf("bFLT: "x"\n"); goto error; } while(0)
+#if VERBOSE_LEVEL > 1
+#define error_return(x) return (printf("bFLT: %s\n",x), -1)
+#define error_goto_error(x) do { printf("bFLT: %s\n",x); goto error; } while(0)
 #else
 #define error_return(x) return -1
 #define error_goto_error(x) goto error
+#endif
+
+#if VERBOSE_LEVEL > 0
+#define error_user_return(x, args...) do { \
+        char err_buffer[128]; \
+        sprintf(err_buffer,x,##args); \
+        show_msgbox("bFLT loader",err_buffer); \
+        error_return(err_buffer); \
+    } while (0)
+#define error_user_goto_error(x, args...) do { \
+        char err_buffer[128]; \
+        sprintf(err_buffer,x,##args); \
+        show_msgbox("bFLT loader",err_buffer); \
+        error_goto_error(err_buffer); \
+    } while (0)
+#else
+#define error_user_return(x, args...) return -1
+#define error_user_goto_error(x, args...) goto error
 #endif
 
 #ifdef SHARED_LIB_SUPPORT
@@ -85,8 +103,7 @@ static int load_shared_library(int id, void **base, unsigned long current_build_
     sprintf(filename,"%s/lib%d.so.tns",LIB_SEARCH_DIR,id);
     fp = fopen(filename, "rb");
     if (!fp) {
-        info("Could not open %s",filename);
-        goto error;
+        error_user_goto_error("Could not open shared library %s", filename);
     }
 
     /* get build date */
@@ -103,7 +120,7 @@ static int load_shared_library(int id, void **base, unsigned long current_build_
             goto success;
     }
 
-    if (header.build_date > current_build_date) error_goto_error("Library build date is newer than current executable. Refusing to load.");
+    if (header.build_date > current_build_date) error_user_goto_error("Library build date is newer than current executable. Refusing to load.");
 
     int (*entry_point)(int,char*[]);
     size_t dummy;
@@ -165,7 +182,7 @@ static inline void* calc_reloc(uint32_t offset, struct flat_hdr * header, void *
     if (id != 0) {
         /* need to load shared library */
 #ifndef SHARED_LIB_SUPPORT
-        error_return("No support for bFLT shared libraries");
+        error_user_return("No support for bFLT shared libraries built in.");
 #else
         if (load_shared_library(id, &base, header->build_date) != 0) return (void*)-1;
 #endif
@@ -220,7 +237,7 @@ static int process_got(struct flat_hdr * header, void * base) {
 int bflt_load(char* filename, void **mem_ptr, size_t *mem_size, int (**entry_address_ptr)(int,char*[])) {
     FILE* fp = fopen(filename, "rb");
     int ret;
-    if (!fp) error_return("Can't open filename");
+    if (!fp) error_user_return("Can't open file %s", filename);
 
     ret = bflt_fload(fp, mem_ptr, mem_size, entry_address_ptr);
 

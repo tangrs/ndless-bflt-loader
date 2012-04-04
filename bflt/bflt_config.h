@@ -22,14 +22,15 @@
 #define CACHE_LIBS_AFTER_EXEC 1
 
 /* Where libraries are searched for */
-#define LIB_SEARCH_DIR "/documents/lib"
+#define LIB_SEARCH_DIR "/documents/ndless/lib"
 
 #endif
 
 /* Verbose level
-     2 = Debugging - Prints infomation and errors
-     1 = Prints errors only
+     3 = Debugging - Prints infomation and errors
+     2 = Prints errors only
+     1 = Show user readable errors only
      0 = Print nothing and fail silently */
-#define VERBOSE_LEVEL 2
+#define VERBOSE_LEVEL 3
 
 #endif
