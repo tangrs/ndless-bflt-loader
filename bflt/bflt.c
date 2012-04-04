@@ -77,19 +77,9 @@ static int check_header(struct flat_hdr * header) {
 #ifdef SHARED_LIB_SUPPORT
 static int load_shared_library(int id, void **base, unsigned long current_build_date) {
     FILE* fp = NULL;
-    info("Trying to load library id %d", id);
+    info("Trying to load library ID %d", id);
     if (id < 0 || id > 0xfe) error_goto_error("Attempted to load library with invalid ID");
     if (id > MAX_SHARED_LIB_ID) error_goto_error("Library ID too high");
-
-    /* check if library is already loaded */
-    if (lib_cache[id-1].base != NULL) {
-        if (lib_cache[id-1].build_date > current_build_date) error_goto_error("Library build date is newer than current executable. Refusing to load.");
-
-        info("Returning cached library pointer");
-        *base = lib_cache[id-1].base;
-        return 0;
-    }
-
 
     char filename[128];
     sprintf(filename,"%s/lib%d.so.tns",LIB_SEARCH_DIR,id);
@@ -102,6 +92,17 @@ static int load_shared_library(int id, void **base, unsigned long current_build_
     /* get build date */
     struct flat_hdr header;
     if (read_header(fp,&header) != 0) error_goto_error("Could not read library header");
+
+    /* check cache */
+    if (lib_cache[id-1].base != NULL && /* check if library is already loaded */
+        lib_cache[id-1].build_date == header.build_date && /* check cached library is same version as file */
+        lib_cache[id-1].build_date <= current_build_date /* check build dates */
+        ) {
+            info("Linking library from cache");
+            *base = lib_cache[id-1].base;
+            goto success;
+    }
+
     if (header.build_date > current_build_date) error_goto_error("Library build date is newer than current executable. Refusing to load.");
 
     int (*entry_point)(int,char*[]);
@@ -115,10 +116,16 @@ static int load_shared_library(int id, void **base, unsigned long current_build_
     if (entry_point(0,NULL) != 0) info("Warning: Library (ID:%d) init routine returned nonzero",id);
 
     /* add to lib_cache */
+
+    /* if there's a stale library loaded, replace it */
+    if (lib_cache[id-1].base) free(lib_cache[id-1].base);
+
     lib_cache[id-1].base = *base;
     lib_cache[id-1].build_date = header.build_date;
 
     /* successfully loaded library */
+    success:
+    info("Library ID %d loaded successfully", id);
     fclose(fp);
     return 0;
     error:
