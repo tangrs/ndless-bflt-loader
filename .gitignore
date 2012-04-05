@@ -4,6 +4,7 @@
 *.tns
 *.o
 *.a
-_lib*_wraps.S
+lib*_wraps.S
+*.bin
 a.out
 
