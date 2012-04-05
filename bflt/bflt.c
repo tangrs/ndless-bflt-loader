@@ -120,7 +120,7 @@ static int load_shared_library(int id, void **base, unsigned long current_build_
             goto success;
     }
 
-    if (header.build_date > current_build_date) error_user_goto_error("Library build date is newer than current executable. Refusing to load.");
+    if (header.build_date > current_build_date) error_user_goto_error("Library ID %d build date is newer than current executable. Refusing to load.", id);
 
     int (*entry_point)(int,char*[]);
     size_t dummy;
