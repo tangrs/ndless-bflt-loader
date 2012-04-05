@@ -18,7 +18,7 @@ foofunc *global_func_ptr_array[] = {
     foo
 };
 
-static volatile unsigned char static_zeros[64];
+static volatile unsigned char static_zeros[10];
 
 int main(int argc, char *argv[]) {
     static foofunc *static_func_ptr = foo;
