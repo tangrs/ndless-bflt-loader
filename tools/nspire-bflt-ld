@@ -41,5 +41,13 @@ if [ "$UNAME" = "cygwin" ]; then
 	NDLESSDIR=`cygpath --path --windows "$DIRNAME"`
 fi
 
-GCC=`(which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc | head -1) 2>/dev/null`
-"$GCC" -Wl,-elf2flt -nostdlib -T "$DIRNAME/ldscript" -L "$NDLESSDIR/../lib" -static "$DIRNAME/crt0.o" "$@" -lndls
+# If g++ is available, use that instead
+GCC=`(which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc which arm-elf-g++ arm-none-eabi-g++ arm-linux-gnueabi-g++ | head -1) 2>/dev/null`
+
+if [ -f $DIRNAME/c++_core.o ]; then
+    CPPOBJECTS="c++_core.o"
+else
+    CPPOBJECTS=""
+fi
+
+"$GCC" -Wl,-elf2flt -nostdlib -T "$DIRNAME/ldscript" -L "$NDLESSDIR/../lib" -static "$DIRNAME/crt0.o" "$DIRNAME/$CPPOBJECTS" "$@" -lndls
