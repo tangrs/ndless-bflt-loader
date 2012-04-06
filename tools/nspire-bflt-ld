@@ -42,7 +42,7 @@ if [ "$UNAME" = "cygwin" ]; then
 fi
 
 # If g++ is available, use that instead
-GCC=`(which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc which arm-elf-g++ arm-none-eabi-g++ arm-linux-gnueabi-g++ | head -1) 2>/dev/null`
+GCC=`(which arm-elf-g++ arm-none-eabi-g++ arm-linux-gnueabi-g++ which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc | head -1) 2>/dev/null`
 
 if [ -f $DIRNAME/c++_core.o ]; then
     CPPOBJECTS="c++_core.o"
