@@ -42,4 +42,4 @@ if [ "$UNAME" = "cygwin" ]; then
 fi
 
 GCC=`(which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc | head -1) 2>/dev/null`
-"$GCC" -Wl,-elf2flt -nostdlib -T "$DIRNAME/ldscript" -L "$NDLESSDIR/../lib" -static "$DIRNAME/crt0.o" "$@" -lndls
+"$GCC" -Wl,-elf2flt -nostartfiles -T "$DIRNAME/ldscript" -L "$NDLESSDIR/../lib" -static "$DIRNAME/crt0.o" "$NDLESSDIR/../system/osstub.o" $@ -lndls

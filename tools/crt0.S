@@ -1,6 +1,7 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
+__base: .global __base
 _start: .global _start
 lib_main: .global lib_main
     stmfd sp!, {r4-r11,lr}

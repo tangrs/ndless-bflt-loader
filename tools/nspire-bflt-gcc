@@ -22,4 +22,4 @@ if [ "$UNAME" = "cygwin" ]; then
 fi
 
 GCC=`(which arm-elf-gcc arm-none-eabi-gcc arm-linux-gnueabi-gcc | head -1) 2>/dev/null`
-"$GCC" -Wl,-elf2flt -fpic -nostdlib -mcpu=arm926ej-s -D _TINSPIRE -I "$DIRNAME/../include" "$@"
+"$GCC" -fpic -nostdlib -mcpu=arm926ej-s -fno-builtin -D _TINSPIRE -I "$DIRNAME/../include" "$@"
