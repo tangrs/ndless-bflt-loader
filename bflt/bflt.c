@@ -95,7 +95,7 @@ static int check_header(struct flat_hdr * header) {
     if (header->rev != FLAT_VERSION) error_return("Version number does not match");
 
     /* check for unsupported flags */
-    if (header->flags & (FLAT_FLAG_GZIP | FLAT_FLAG_GZDATA)) error_return("Unsupported flags detected");
+    if (header->flags & (FLAT_FLAG_GZIP | FLAT_FLAG_GZDATA)) error_user_return("Unsupported flags detected - GZip'd data is not supported");
 
     return 0;
 }
